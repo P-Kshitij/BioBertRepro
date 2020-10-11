@@ -9,8 +9,8 @@ def preprocess():
     for path in pathlist:
         PATH = str(SOURCE/path.name)
         NEWPATH = str(DEST/path.name)
-        print(PATH, NEWPATH)
-        do_preprocess(PATH,' -> ',NEWPATH)
+        print(PATH, '->' ,NEWPATH)
+        do_preprocess(PATH,NEWPATH)
 
 def do_preprocess(PATH,NEWPATH):
     '''

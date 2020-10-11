@@ -1,6 +1,8 @@
 # Download and preprocess the data
-wget "https://drive.google.com/uc?export=download&id=1OletxmPYNkz2ltOr9pyT0b0iBtUWxslh" -O /input/NERdataset.zip
+wget "https://drive.google.com/uc?export=download&id=1OletxmPYNkz2ltOr9pyT0b0iBtUWxslh" -O input/NERdataset.zip
 unzip input/NERdataset.zip -d input/NERdataset/
+rm input/NERdataset.zip
+mkdir -p input/NERdataset_preproc/NCBI-disease/
 python preprocess.py
 # Download model
 mkdir input/bert-base-uncased/
