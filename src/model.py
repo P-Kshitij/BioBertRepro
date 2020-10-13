@@ -5,7 +5,7 @@ import torch.nn as nn
 
 def loss_fn(output, target, mask, num_labels):
     lfn = nn.CrossEntropyLoss()
-    active_loss = mask.view(-1,1) == 1
+    active_loss = mask.view(-1) == 1
     active_logits = output.view(-1, num_labels)
     active_labels = torch.where(
         active_loss,
