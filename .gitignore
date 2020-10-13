@@ -3,3 +3,4 @@ input/*
 models/*
 !models/.gitkeep
 src/__pycache__
+src/meta.bin

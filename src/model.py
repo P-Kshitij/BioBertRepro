@@ -24,10 +24,10 @@ class NERModel(nn.Module):
         self.drop = nn.Dropout(0.3)
         self.out_tag = nn.Linear(768, self.num_tags)
 
-    def forward(ids, mask, token_type_ids, target_tags):
+    def forward(self, ids, mask, token_type_ids, target_tags):
         o1, _  =  self.bert(
             ids,
-            mask = mask,
+            attention_mask = mask,
             token_type_ids = token_type_ids
         )
         bo_tags = self.drop(o1)

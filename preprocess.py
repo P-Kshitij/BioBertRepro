@@ -42,7 +42,7 @@ def do_preprocess(PATH,NEWPATH):
             label_list.append(r[2])
         
     df_new = pd.DataFrame(new_data,columns = ['sentence','labels'])
-    df_new.to_csv(NEWPATH)
+    df_new.to_csv(NEWPATH, index=False)
 
 if __name__ == "__main__":
     preprocess()

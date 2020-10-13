@@ -1,9 +1,10 @@
 from torch.utils.data import Dataset
 import torch
+import config
 
 class NERdataset(Dataset):
     def __init__(self, texts, tags):
-        self.texts = tests
+        self.texts = texts
         self.tags = tags
 
     def __len__(self):
@@ -16,7 +17,7 @@ class NERdataset(Dataset):
         ids = []
         target_tags = []
         for i,s in enumerate(text):
-            inputs = config.TOKENIZER(
+            inputs = config.TOKENIZER.encode(
                 s,
                 add_special_tokens = False
             )
