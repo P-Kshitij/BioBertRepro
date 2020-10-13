@@ -34,7 +34,7 @@ if __name__ == "__main__":
     sentences, tags, enc_tags = preprocess_data(config.TRAINING_FILE)
     
     meta_data = {
-        enc_tags : enc_tags
+        'enc_tags' : enc_tags
     }
     joblib.dump(meta_data, 'meta.bin')
     num_tags = len(list(enc_tags.classes_))
