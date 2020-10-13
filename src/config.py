@@ -1,6 +1,6 @@
 import transformers
 
-TRAINING_FILE = "../input/NERdataset_preproc/NCBI-disease/"
+TRAINING_FILE = "../input/NERdataset_preproc/NCBI-disease/devel.tsv"
 BERT_PATH = "../input/bert-base-uncased/"
 TRAIN_BATCH_SIZE = 8
 VALID_BATCH_SIZE = 8
