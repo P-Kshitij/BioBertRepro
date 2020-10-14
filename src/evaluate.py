@@ -3,6 +3,7 @@ from ast import literal_eval
 import joblib
 import torch
 from tqdm import tqdm
+from sklearn.metrics import classification_report
 
 import config
 import dataset
@@ -29,28 +30,38 @@ def get_dataloader(sentences, tags):
 
 def evaluate(test_dataloader, model, device, num_tags):
     model.eval()
+    tags_ytrue = []
+    tags_ypred = []
     with torch.no_grad():
         for data in tqdm(test_dataloader, total=len(test_dataloader)):
             for k,v in data.items():
                 data[k] = v.to(device)
             logits, _ = model(**data)
-        logits = logits.view(-1, num_tags)
-        print(logits)
-        raise NotImplementedError
+            tags_pred = logits.argmax(2).cpu().numpy()
+            mask_np = data['mask'].cpu().numpy()
+            target_tags_np = data['target_tags'].cpu().numpy()
+            for idx, arr in enumerate(tags_pred):
+                tags_ypred.extend(list(arr[mask_np[idx,:]==1])[1:-1])
+                tags_ytrue.extend(list(target_tags_np[idx, mask_np[idx,:]==1])[1:-1])
+            assert(len(tags_ytrue)==len(tags_ypred))
+            return tags_ypred, tags_ytrue
+
+    return tags_ypred, tags_ytrue
     
 
 
 
 
 if __name__ == "__main__":
-    meta_data = joblib.load(config.LABEL_ENCODER_PATH)
+    meta_data = joblib.load(config.METADATA_PATH)
     for v in meta_data.values():
         enc_tags = v
-    print(type(enc_tags))
     num_tags = len(list(enc_tags.classes_))
     sentences, tags = preprocess_data(config.TEST_FILE, enc_tags)
     test_dataloader = get_dataloader(sentences, tags)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = NERModel(num_tags)
     model.load_state_dict(torch.load(config.MODEL_PATH,map_location=device))
-    evaluate(test_dataloader, model, device, num_tags)
+    tags_ypred, tags_ytrue = evaluate(test_dataloader, model, device, num_tags)
+
+    print(classification_report(tags_ytrue, tags_ypred))
