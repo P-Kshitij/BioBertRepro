@@ -28,7 +28,7 @@ def get_dataloader(sentences, tags):
     )
     return test_dataloader
 
-def evaluate(test_dataloader, model, device, num_tags):
+def evaluate(test_dataloader, model, device, num_tags, grouped_entities=False):
     model.eval()
     tags_ytrue = []
     tags_ypred = []
@@ -37,6 +37,14 @@ def evaluate(test_dataloader, model, device, num_tags):
             for k,v in data.items():
                 data[k] = v.to(device)
             logits, _ = model(**data)
+            print(data["ids"].cpu().numpy().tolist()[0])
+            print(len(data["ids"].cpu().numpy().tolist()))
+            if grouped_entities==True:
+                grouped_text = config.TOKENIZER.decode(
+                data["ids"].cpu().numpy().tolist()[0][1:-1],
+                )
+                print(grouped_text)
+
             tags_pred = logits.argmax(2).cpu().numpy()
             mask_np = data['mask'].cpu().numpy()
             target_tags_np = data['target_tags'].cpu().numpy()
@@ -62,6 +70,6 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = NERModel(num_tags)
     model.load_state_dict(torch.load(config.MODEL_PATH,map_location=device))
-    tags_ypred, tags_ytrue = evaluate(test_dataloader, model, device, num_tags)
+    tags_ypred, tags_ytrue = evaluate(test_dataloader, model, device, num_tags, grouped_entities=True)
 
     print(classification_report(tags_ytrue, tags_ypred))

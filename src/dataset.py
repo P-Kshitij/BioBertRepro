@@ -16,6 +16,7 @@ class NERdataset(Dataset):
 
         ids = []
         target_tags = []
+        group_masks = []
         for i,s in enumerate(text):
             inputs = config.TOKENIZER.encode(
                 s,
@@ -24,6 +25,7 @@ class NERdataset(Dataset):
             input_len = len(inputs)
             ids.extend(inputs)
             target_tags.extend([tag[i]]*input_len)
+            group_masks.extend([i]*input_len)
 
         # Truncating to max_len
         ids = ids[:config.MAX_LEN-2]
