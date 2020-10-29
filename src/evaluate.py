@@ -4,6 +4,7 @@ import joblib
 import torch
 from tqdm import tqdm
 from sklearn.metrics import classification_report
+import numpy as np
 
 import config
 import dataset
@@ -37,13 +38,15 @@ def evaluate(test_dataloader, model, device, num_tags, grouped_entities=False):
             for k,v in data.items():
                 data[k] = v.to(device)
             logits, _ = model(**data)
-            print(data["ids"].cpu().numpy().tolist()[0])
-            print(len(data["ids"].cpu().numpy().tolist()))
             if grouped_entities==True:
-                grouped_text = config.TOKENIZER.decode(
-                data["ids"].cpu().numpy().tolist()[0][1:-1],
-                )
-                print(grouped_text)
+                for i,text in enumerate(data["ids"].cpu().numpy()):
+                    grouped_text = config.TOKENIZER.decode(
+                    text
+                    )
+                    print(grouped_text)
+                    print(data["mask"].cpu().numpy()[i])
+                    #print((np.array(grouped_text))[data["mask"].cpu().numpy()[i]])
+                    #print(np.array(grouped_text)))
 
             tags_pred = logits.argmax(2).cpu().numpy()
             mask_np = data['mask'].cpu().numpy()
