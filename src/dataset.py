@@ -3,9 +3,10 @@ import torch
 import config
 
 class NERdataset(Dataset):
-    def __init__(self, texts, tags):
+    def __init__(self, texts, tags, evalmode=False):
         self.texts = texts
         self.tags = tags
+        self.evalmode = evalmode
 
     def __len__(self):
         return len(self.texts)
@@ -51,9 +52,18 @@ class NERdataset(Dataset):
         assert(len(mask)==config.MAX_LEN)
         assert(len(token_type_ids)==config.MAX_LEN)
 
-        return {
-            "ids":torch.tensor(ids, dtype=torch.long),
-            "mask":torch.tensor(mask, dtype=torch.long),
-            "token_type_ids":torch.tensor(token_type_ids, dtype=torch.long),
-            "target_tags": torch.tensor(target_tags, dtype=torch.long)
-        }
+        if self.evalmode==True:
+            return {
+                "ids":torch.tensor(ids, dtype=torch.long),
+                "mask":torch.tensor(mask, dtype=torch.long),
+                "token_type_ids":torch.tensor(token_type_ids, dtype=torch.long),
+                "target_tags": torch.tensor(target_tags, dtype=torch.long),
+                "group_masks": torch.tensor(group_masks, dtype=torch.long)
+            }
+        else: 
+            return {
+                "ids":torch.tensor(ids, dtype=torch.long),
+                "mask":torch.tensor(mask, dtype=torch.long),
+                "token_type_ids":torch.tensor(token_type_ids, dtype=torch.long),
+                "target_tags": torch.tensor(target_tags, dtype=torch.long)
+            }
