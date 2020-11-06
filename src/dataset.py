@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 import torch
 import config
+import numpy as np
 
 class NERdataset(Dataset):
     def __init__(self, texts, tags, evalmode=False):
@@ -26,7 +27,7 @@ class NERdataset(Dataset):
             input_len = len(inputs)
             ids.extend(inputs)
             target_tags.extend([tag[i]]*input_len)
-            group_masks.extend([i]*input_len)
+            group_masks.extend([i+1]*input_len)
 
         # Truncating to max_len
         ids = ids[:config.MAX_LEN-2]
@@ -35,7 +36,7 @@ class NERdataset(Dataset):
         # Adding special tokens 
         ids = [101] + ids + [102]
         target_tags = [0] + target_tags + [0]
-
+        group_masks = [0] + group_masks + [0]
         mask = [1]*len(ids)
         token_type_ids = [0]*len(ids)
 
@@ -45,6 +46,7 @@ class NERdataset(Dataset):
         target_tags = target_tags + ([0]*padding_len)
         mask = mask + ([0]*padding_len)
         token_type_ids = token_type_ids + ([0]*padding_len)
+        group_masks = group_masks + ([0]*padding_len)
 
         # Sanity check
         assert(len(ids)==config.MAX_LEN)

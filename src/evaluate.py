@@ -22,7 +22,7 @@ def preprocess_data(data_path, enc_tags):
     return sentences, tags
 
 def get_dataloader(sentences, tags):
-    test_dataset = dataset.NERdataset(sentences, tags)
+    test_dataset = dataset.NERdataset(sentences, tags, evalmode = True)
     test_dataloader = torch.utils.data.DataLoader(
         dataset = test_dataset,
         batch_size = config.TEST_BATCH_SIZE
@@ -37,8 +37,8 @@ def evaluate(test_dataloader, model, device, num_tags, grouped_entities=False):
         for data in tqdm(test_dataloader, total=len(test_dataloader)):
             for k,v in data.items():
                 data[k] = v.to(device)
-            data_without_group_masks = {k:v for k,v in d.items() if k!='group_masks'}
-            logits, _ = model(**data)
+            data_without_group_masks = {k:v for k,v in data.items() if k!='group_masks'}
+            logits, _ = model(**data_without_group_masks)
             if grouped_entities==True:
                 for i,text in enumerate(data["ids"].cpu().numpy()):
                     grouped_text = config.TOKENIZER.decode(
@@ -49,6 +49,8 @@ def evaluate(test_dataloader, model, device, num_tags, grouped_entities=False):
                         text,
                         skip_special_tokens = True
                     )
+                    print(data['group_masks'][0])
+                    print(type(data['group_masks']))
                     print(grouped_text)
                     print(ungrouped_text)
                     print(len(ungrouped_text))
@@ -61,13 +63,59 @@ def evaluate(test_dataloader, model, device, num_tags, grouped_entities=False):
             tags_pred = logits.argmax(2).cpu().numpy()
             mask_np = data['mask'].cpu().numpy()
             target_tags_np = data['target_tags'].cpu().numpy()
+            group_masks = data['group_masks'].cpu().numpy()
             for idx, arr in enumerate(tags_pred):
-                if idx==0:
-                    print(list(arr[mask_np[idx,:]==1])[1:-1])
-                    print(len(list(arr[mask_np[idx,:]==1])[1:-1]))
-                tags_ypred.extend(list(arr[mask_np[idx,:]==1])[1:-1])
-                tags_ytrue.extend(list(target_tags_np[idx, mask_np[idx,:]==1])[1:-1])
-            assert(len(tags_ytrue)==len(tags_ypred))
+                # if idx==0:
+                #     print(list(arr[mask_np[idx,:]==1])[1:-1])
+                #     print(len(list(arr[mask_np[idx,:]==1])[1:-1]))
+                pred_tags = arr[mask_np[idx,:]==1][1:-1]
+                target_tags = (target_tags_np[idx, mask_np[idx,:]==1])[1:-1]
+                assert(len(pred_tags)==len(target_tags))
+                if grouped_entities == True:
+                    group_mask_idx = group_masks[idx, group_masks[idx]!=0]
+                    grouped_tags_ypred = []
+                    grouped_tags_ytrue = []
+                    assert(len(group_mask_idx)==len(pred_tags))
+                    i = 0
+                    while(i < len(group_mask_idx)
+                    ):
+                        group_idx = group_mask_idx[i]
+                        target_group_tags = set()
+                        pred_group_tags = set()
+                        if idx==0:
+                            print('starting i',i)
+                        while(i<len(group_mask_idx) and group_mask_idx[i]==group_idx):
+                            if idx==0:
+                                print(i, group_mask_idx[i], group_idx)
+                            pred_group_tags.add(pred_tags[i])
+                            target_group_tags.add(target_tags[i])
+                            i+=1
+                        if idx==0:
+                            print('ending i',i)
+                        # Sanity check to ensure that when we rebuild from tokens, we get the same tags.
+                        # Note that we just did reverse of this transform in dataset.py lines (29)
+                        assert(len(target_group_tags)==1)
+                        grouped_tags_ytrue.append(target_group_tags.pop())
+                        if(len(pred_group_tags)==1):
+                            # Here we have the same tags for all tokens of a word
+                            # Meaninng ['ata' , '##xia'] has tags ['B','B'] meaning we can combine
+                            grouped_tags_ypred.append(pred_group_tags.pop())
+                        else:
+                            # Here we have the different tags for different tokens of a word
+                            # Meaninng ['ata' , '##xia'] has tags ['B','O'] meaning we can must treat 
+                            # as a wrong answer and add an 'X' 
+                            grouped_tags_ypred.append(3)
+                    print('idx: ',idx,'len',len(grouped_tags_ypred))
+                    print(grouped_tags_ypred)
+                    print(grouped_tags_ytrue)
+                    print(group_mask_idx)
+                    tags_ypred.extend(grouped_tags_ypred)
+                    tags_ytrue.extend(grouped_tags_ytrue)
+                    assert(len(tags_ytrue)==len(tags_ypred))
+                else:   
+                    tags_ypred.extend(list(pred_tags))
+                    tags_ytrue.extend(list(target_tags))
+                    assert(len(tags_ytrue)==len(tags_ypred))
             return tags_ypred, tags_ytrue
 
     return tags_ypred, tags_ytrue
@@ -87,7 +135,7 @@ if __name__ == "__main__":
     model = NERModel(num_tags)
     model.load_state_dict(torch.load(config.MODEL_PATH,map_location=device))
     tags_ypred, tags_ytrue = evaluate(test_dataloader, model, device, num_tags, grouped_entities=True)
-    tags_ypred = enc_tags.inverse_transform(tags_ypred)
-    tags_ytrue = enc_tags.inverse_transform(tags_ytrue)
+    # tags_ypred = enc_tags.inverse_transform(tags_ypred)
+    # tags_ytrue = enc_tags.inverse_transform(tags_ytrue)
     print(tags_ytrue,tags_ypred)
     print(classification_report(tags_ytrue, tags_ypred))
