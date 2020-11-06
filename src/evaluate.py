@@ -63,18 +63,24 @@ def evaluate(test_dataloader, model, device, num_tags, grouped_entities=False):
                             pred_group_tags.add(pred_tags[i])
                             target_group_tags.add(target_tags[i])
                             i+=1
-                        # Sanity check to ensure that when we rebuild from tokens, we get the same tags.
-                        # Note that we just did reverse of this transform in dataset.py lines (29)
+                        '''
+                        Sanity check to ensure that when we rebuild from tokens, we get the same tags.
+                        Note that we just did reverse of this transform in dataset.py lines (29)
+                        '''
                         assert(len(target_group_tags)==1)
                         grouped_tags_ytrue.append(target_group_tags.pop())
                         if(len(pred_group_tags)==1):
-                            # Here we have the same tags for all tokens of a word
-                            # Meaninng ['ata' , '##xia'] has tags ['B','B'] meaning we can combine
+                            '''
+                            Here we have the same tags for all tokens of a word
+                            Meaninng ['ata' , '##xia'] has tags ['B','B'] meaning we can combine
+                            '''
                             grouped_tags_ypred.append(pred_group_tags.pop())
                         else:
-                            # Here we have different tags for different tokens of a word
-                            # Meaninfrom seqeval.metrics import classification_reportfrom seqeval.metrics import classification_reportg ['ata' , '##xia'] has tags ['B','O'] meaning we can must treat 
-                            # as a wrong answer and add an 'X' 
+                            '''
+                            Here we have different tags for different tokens of a word
+                            Meaning ['ata' , '##xia'] has tags ['B','O'] meaning we can must treat 
+                            as a wrong answer and add an '3', which becomes 'X' on decoding 
+                            '''
                             grouped_tags_ypred.append(3)
                     # print('idx: ',idx,'len',len(grouped_tags_ypred))
                     # print(grouped_tags_ypred)

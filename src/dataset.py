@@ -5,6 +5,11 @@ import numpy as np
 
 class NERdataset(Dataset):
     def __init__(self, texts, tags, evalmode=False):
+        '''
+        evalmode = True, when testing and making a test dataset
+        It additionally passes 'group_masks' to the dataloader, which is used 
+        to convert wordpiece-level token predictions to word level predictions
+        '''
         self.texts = texts
         self.tags = tags
         self.evalmode = evalmode
