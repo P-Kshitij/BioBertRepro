@@ -14,7 +14,7 @@ bash setup.sh
 ```
 ### Finetuning on NER-datasets:
 ___
-Run `train.py` to finetune the model on disease-datasets of the paper. Additionally to finetune on other datasets, make changes to `config.py`. There is an optional argument of secondary folderpath which can be when working on a remote server. When invoked, apart from saving the metadata and model in the local repository, it is also saved at a secondary path (For eg a G-drive path when working on a Google Colab server). 
+Run `train.py` to finetune the model on disease-datasets of the paper. Additionally to finetune on other datasets, make changes to `config.py`. There is an optional argument of secondary folderpath which can be when working on a remote server. When invoked, apart from saving the metadata and model in the local repository, it is also saved at a secondary path (For e.g. a G-drive path when working on a Google Colab server). 
 ```bash
 cd src
 python train.py [-f(optional) "SECONDARY_FOLDERPATH"]
