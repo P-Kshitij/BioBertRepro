@@ -6,20 +6,29 @@ from tqdm import tqdm
 from sklearn.metrics import classification_report
 from seqeval.metrics import classification_report as seqeval_classification_report
 import numpy as np
+import argparse
 
 import config
 import dataset
 from model import NERModel
 
-def preprocess_data(data_path, enc_tags):
-    df = pd.read_csv(data_path)
-    df['sentence'] = df['sentence'].apply(literal_eval)
-    df['labels'] = df['labels'].apply(literal_eval)
+def preprocess_data(enc_tags):
+    sentences = []
+    tags = []
+    for dataset_name in config.DATASET_LIST:
+        data_path = config.DATASET_PATH + dataset_name + "/" + config.TEST_FILE
+        df = pd.read_csv(data_path)
+        df['sentence'] = df['sentence'].apply(literal_eval)
+        df['labels'] = df['labels'].apply(literal_eval)
 
-    df['labels'] = df['labels'].apply(enc_tags.transform)
-    sentences = df['sentence'].values
-    tags = df['labels'].values
-
+        df['labels'] = df['labels'].apply(enc_tags.transform)
+        sentences_dataset = list(df['sentence'].values)
+        tags_dataset = list(df['labels'].values)
+        sentences.extend(sentences_dataset)
+        tags.extend(tags_dataset)
+    
+    sentences = np.array(sentences)
+    tags = np.array(tags)
     return sentences, tags
 
 def get_dataloader(sentences, tags):
@@ -94,31 +103,41 @@ def evaluate(test_dataloader, model, device, num_tags, grouped_entities=False):
                     tags_ytrue.append(list(target_tags))
                     assert(len(pred_tags)==len(target_tags))
             # Uncomment for quick evaluation on just 8 examples        
-            #return tags_ypred, tags_ytrue
+            # return tags_ypred, tags_ytrue
 
     return tags_ypred, tags_ytrue
     
-def decode_transform(arr):
-    transform_dict = {0:'B',1:'I',2:'O',3:'X'}
+def decode_transform(arr,enc_tags):
     for i in range(len(arr)):
         for j in range(len(arr[i])):
-            arr[i][j] = transform_dict[arr[i][j]]
+            if arr[i][j] < 3:
+                arr[i][j] = enc_tags.inverse_transform([arr[i][j]])[0]
+            elif arr[i][j] == 3:
+                arr[i][j] = 'X'
+            else:
+                raise KeyError(str(arr[i][j])+' as key not found in Label Encoder ')
     return arr
 
 if __name__ == "__main__":
+    my_parser = argparse.ArgumentParser()
+    my_parser.version = '1.0'
+    my_parser.add_argument('-g','--grouped_entities', action='store_true',help='if used, evaluate all metrics on exact entity-level matching, instead of just wordpiece-level tokens ')
+    args = my_parser.parse_args()
+    grouped_entities = args.grouped_entities
+
     meta_data = joblib.load(config.METADATA_PATH)
-    for v in meta_data.values():
-        enc_tags = v
+    enc_tags = meta_data['enc_tags']
+
     num_tags = len(list(enc_tags.classes_))
-    sentences, tags = preprocess_data(config.TEST_FILE, enc_tags)
+    sentences, tags = preprocess_data(enc_tags)
     test_dataloader = get_dataloader(sentences, tags)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = NERModel(num_tags)
     model.load_state_dict(torch.load(config.MODEL_PATH,map_location=device))
-    tags_ypred, tags_ytrue = evaluate(test_dataloader, model, device, num_tags, grouped_entities=True)
+    tags_ypred, tags_ytrue = evaluate(test_dataloader, model, device, num_tags, grouped_entities=grouped_entities)
     # tags_ypred = enc_tags.inverse_transform(tags_ypred)
     # tags_ytrue = enc_tags.inverse_transform(tags_ytrue)
-    tags_ypred = decode_transform(tags_ypred)
-    tags_ytrue = decode_transform(tags_ytrue)
+    tags_ypred = decode_transform(tags_ypred, enc_tags)
+    tags_ytrue = decode_transform(tags_ytrue, enc_tags)
     # print(tags_ytrue,tags_ypred)
     print(seqeval_classification_report(tags_ytrue, tags_ypred))

@@ -1,15 +1,5 @@
 import transformers
 
-DATASET_LIST = [
-    'BC2GM',
-    'BC4CHEMD',
-    'BC5CDR-chem',
-    'BC5CDR-disease',
-    'JNLPBA',
-    'linnaeus',
-    'NCBI-disease',
-    's800'
-]
 DATASET_LIST_DISEASE = [
     'BC5CDR-disease',
     'NCBI-disease'
@@ -26,6 +16,9 @@ DATASET_LIST_SPECIES = [
     'linnaeus',
     's800'
 ]
+
+# Make changes here to choose another dataset list
+DATASET_LIST = DATASET_LIST_DISEASE
 
 DATASET_PATH = "../input/NERdataset_preproc/"
 TRAINING_FILE = "train_dev.tsv"

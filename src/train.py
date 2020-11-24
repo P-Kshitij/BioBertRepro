@@ -11,6 +11,7 @@ import config
 import dataset
 import engine
 import joblib
+import argparse
 from model import NERModel
 
 def preprocess_data(data_path):
@@ -32,16 +33,21 @@ def preprocess_data(data_path):
 
 if __name__ == "__main__":
 
+    my_parser = argparse.ArgumentParser()
+    my_parser.version = '1.0'
+    my_parser.add_argument('-f','--folderpath', action='store',help='secondary path for saving metadata and model')
+    args = my_parser.parse_args()
+    SECONDARY_PATH = args.folderpath
+    if(SECONDARY_PATH is not None and SECONDARY_PATH[-1] != '/'):
+        SECONDARY_PATH += '/'
+
     sentences = []
     tags = []
-    for dataset_name in config.DATASET_LIST_DISEASE:
+    for dataset_name in config.DATASET_LIST:
         TRAINFILE = config.DATASET_PATH + dataset_name + "/" + config.TRAINING_FILE
         sentences_dataset, tags_dataset, enc_tags = preprocess_data(TRAINFILE)
         sentences.extend(sentences_dataset)
         tags.extend(tags_dataset)
-    
-    print(sentences[:10])
-    print(tags[:10])
     
     sentences = np.array(sentences)
     tags = np.array(tags)
@@ -50,7 +56,9 @@ if __name__ == "__main__":
         'enc_tags' : enc_tags
     }
     joblib.dump(meta_data, 'meta.bin')
-    joblib.dump(meta_data, config.DRIVE_MODEL_PATH+'meta.bin')
+    if(SECONDARY_PATH is not None):
+        joblib.dump(meta_data, SECONDARY_PATH+'meta.bin')
+        print('saved metadata to : ',SECONDARY_PATH+'meta.bin')
 
     num_tags = len(list(enc_tags.classes_))
 
@@ -108,5 +116,7 @@ if __name__ == "__main__":
         print(f"Train Loss = {train_loss} Valid Loss = {test_loss}")
         if test_loss < best_loss:
             torch.save(model.state_dict(), config.MODEL_PATH)
-            torch.save(model.state_dict(), config.DRIVE_MODEL_PATH)
+            if SECONDARY_PATH is not None:
+                torch.save(model.state_dict(), SECONDARY_PATH+'model.bin')
+                print('saved model to : ',SECONDARY_PATH+'model.bin')
             best_loss = test_loss
